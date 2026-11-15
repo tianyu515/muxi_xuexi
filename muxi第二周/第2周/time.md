@@ -1,0 +1,2 @@
+- time.sleep():让程序休眠，time.sleep(2*time.Second)让程序休眠两秒，time.sleep(500*time.Millisecond)让程序休眠500毫秒，接收的是一个time.Duration类型,想要随机休眠，需要强制类型转换
+- 使用math/rand库里的rang.Intn(n)函数可以生成0~n-1的随机数，返回的是一个int类型

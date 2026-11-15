@@ -1,4 +1,4 @@
-
+//我只会导入，其他时间太赶没时间学了，等下去后补学后再完成
 package main
 
 import (
@@ -28,11 +28,10 @@ const ConsumeNum = 5
 
 func main() {
 	var consumeMSG []MSG
-	var lastConsumeTime time.Time
-
+	var lastConsumeTime time.Time // 记录上次消费的时间
 	msgs := make(chan MSG)
 
-	// 生产消息
+	// 这里源源不断地生产信息
 	go func() {
 		for i := 0; ; i++ {
 			msgs <- MSG{
@@ -49,55 +48,52 @@ func main() {
 				},
 			}
 
-			// 模拟生产消息的间隔
+			// 每次发送信息会停止0.01秒以模拟真实场景
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 
-	// 不断接收消息
+	// 不断接收消息进行消费
 	for msg := range msgs {
-
-		// 将新消息添加到切片
+		// 添加新的值到events中
 		consumeMSG = append(consumeMSG, msg)
 
-		// 达到5条，批量消费
+		// 如果数量达到额定值就批量消费
 		if len(consumeMSG) >= ConsumeNum {
 
-			// 复制出独立的一批数据，避免异步消费时发生数据竞争
-			m := make([]MSG, ConsumeNum)
-			copy(m, consumeMSG[:ConsumeNum])
+			// TODO：异步消费及切片数据传递，我目前还不会
+			go func() {
+				m := consumeMSG[:ConsumeNum]
+				fn(m)
+			}()
 
-			// 异步消费
-			go fn(m)
-
-			// 移除已经消费的5条消息
-			consumeMSG = consumeMSG[ConsumeNum:]
-
-			// 更新消费时间
+			// 更新上次消费时间
 			lastConsumeTime = time.Now()
 
-		} else if !lastConsumeTime.IsZero() &&
-			time.Since(lastConsumeTime) > 5*time.Minute {
+			// 清除插入的数据
+			consumeMSG = consumeMSG[ConsumeNum:]
 
-			// 超过5分钟，有未消费的消息
+		} else if !lastConsumeTime.IsZero() && time.Since(lastConsumeTime) > 5*time.Minute {
+
+			// TODO：超时消费及剩余消息处理，我目前还不会
 			if len(consumeMSG) > 0 {
+				// 进行异步消费
+				go func() {
+					m := consumeMSG[:ConsumeNum]
+					fn(m)
+				}()
 
-				// 剩余多少条就消费多少条
-				m := make([]MSG, len(consumeMSG))
-				copy(m, consumeMSG)
-
-				go fn(m)
-
-				// 清空待消费切片
-				consumeMSG = consumeMSG[:0]
-
+				// 更新上次消费时间
 				lastConsumeTime = time.Now()
+
+				// 清空插入的数据
+				consumeMSG = consumeMSG[ConsumeNum:]
 			}
 		}
 	}
 }
 
-// 消费消息
 func fn(m []MSG) {
 	fmt.Printf("本次消费了%d条消息\n", len(m))
 }
+
